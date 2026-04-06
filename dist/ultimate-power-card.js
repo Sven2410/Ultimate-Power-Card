@@ -186,14 +186,20 @@ class UltimatePowerCard extends HTMLElement {
         <div class="row${border}" id="phase-${i}">
           <span class="pn">Fase ${i}</span>
 
-          <ha-icon icon="mdi:sine-wave" class="vi"></ha-icon>
-          <span class="vt" id="volt-${i}">-- V</span>
+          <div class="meas">
+            <ha-icon icon="mdi:sine-wave" class="vi"></ha-icon>
+            <span class="vt" id="volt-${i}">-- V</span>
+          </div>
 
-          <ha-icon icon="mdi:flash" class="vi"></ha-icon>
-          <span class="vt pw" id="power-${i}">-- W</span>
+          <div class="meas">
+            <ha-icon icon="mdi:flash" class="vi"></ha-icon>
+            <span class="vt" id="power-${i}">-- W</span>
+          </div>
 
-          <ha-icon icon="mdi:current-ac" class="vi"></ha-icon>
-          <span class="vt" id="amp-${i}">-- A</span>
+          <div class="meas">
+            <ha-icon icon="mdi:current-ac" class="vi"></ha-icon>
+            <span class="vt" id="amp-${i}">-- A</span>
+          </div>
         </div>
       `;
     }
@@ -224,27 +230,20 @@ class UltimatePowerCard extends HTMLElement {
         font-family: var(--primary-font-family, sans-serif);
       }
 
-      /* ── Grid layout ──────────────────────────────────────────
-         Columns (left→right):
-           [label]  [v-icon]  [volt-val]  [p-icon]  [power-val]  [a-icon]  [amp-val]
-
-         Fixed widths keep every column pixel-perfect across all
-         rows, even when L1=800 W while L2/L3=0 W.
-      ────────────────────────────────────────────────────────── */
+      /*
+       * Grid: 4 columns
+       *   [fase-label] [voltage-group] [power-group] [current-group]
+       *
+       * Each "group" is a .meas flex-row: icon glued directly to its value.
+       * Because all rows share the same grid template the columns align
+       * perfectly — even when one row has "800 W" and another "0 W".
+       */
       .row {
         display: grid;
-        grid-template-columns:
-          62px          /* phase label           */
-          22px          /* voltage icon          */
-          60px          /* voltage value         */
-          22px          /* power icon            */
-          76px          /* power value (up to -1200 W) */
-          22px          /* current icon          */
-          60px;         /* current value         */
+        grid-template-columns: 62px 1fr 1fr 1fr;
         align-items: center;
         padding: 14px 20px;
-        gap: 0;         /* spacing handled by column widths */
-        column-gap: 4px;
+        gap: 0 8px;
       }
 
       .rb {
@@ -258,21 +257,30 @@ class UltimatePowerCard extends HTMLElement {
         color: rgba(255,255,255,0.92);
       }
 
-      /* Icons: always the same size, colour */
+      /*
+       * Each measurement group: icon + value as one tight unit.
+       * The group sits in a 1fr column so all three groups get
+       * equal space — guaranteed alignment across rows.
+       */
+      .meas {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      /* Icon */
       .vi {
         --mdc-icon-size: 18px;
         color: rgba(255,255,255,0.38);
-        display: flex;
-        justify-content: center;
+        flex-shrink: 0;
       }
 
-      /* Values: right-aligned within their fixed column */
+      /* Value text */
       .vt {
         font-size: 14px;
         font-weight: 600;
         color: rgba(255,255,255,0.85);
         white-space: nowrap;
-        text-align: right;
         font-variant-numeric: tabular-nums;
       }
     </style>`;
@@ -340,7 +348,7 @@ window.customCards.push({
 });
 
 console.info(
-  "%c ULTIMATE-POWER-CARD %c v1.1.0 ",
+  "%c ULTIMATE-POWER-CARD %c v1.2.0 ",
   "color:#fff;background:#FF9800;font-weight:bold;padding:2px 6px;border-radius:4px 0 0 4px;",
   "color:#FF9800;background:#f0f0f0;font-weight:bold;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
