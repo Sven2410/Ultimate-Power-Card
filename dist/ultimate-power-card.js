@@ -3,7 +3,7 @@
  * A custom Lovelace card for Home Assistant
  * Displays voltage, power, and current per phase (1 or 3 phase)
  *
- * Version: 1.0.0
+ * Version: 1.1.0  –  Fixed column alignment with CSS Grid
  */
 
 /* ============================================================
@@ -44,14 +44,8 @@ class UltimatePowerCardEditor extends HTMLElement {
       <style>
         :host { display:block; }
         .row { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
-        .row.hidden { display:none; }
         label { font-size:13px; font-weight:500; color:var(--primary-text-color); }
         ha-entity-picker { display:block; width:100%; }
-        .section-title {
-          font-size:12px; font-weight:700; color:var(--primary-text-color);
-          text-transform:uppercase; letter-spacing:0.05em;
-          margin:12px 0 4px; opacity:0.6;
-        }
         .mode-select {
           display:block; width:100%; padding:10px 12px;
           background: var(--card-background-color, #1c1c1c);
@@ -62,10 +56,6 @@ class UltimatePowerCardEditor extends HTMLElement {
           cursor:pointer; outline:none;
           -webkit-appearance:none; appearance:none;
         }
-        .mode-select option {
-          background: var(--card-background-color, #1c1c1c);
-          color: var(--primary-text-color, #fff);
-        }
         .phase-group {
           padding:12px; margin-bottom:8px;
           border:1px solid var(--divider-color, #333);
@@ -74,10 +64,7 @@ class UltimatePowerCardEditor extends HTMLElement {
         }
         .phase-group .row { margin-bottom:10px; }
         .phase-group .row:last-child { margin-bottom:0; }
-        .phase-label {
-          font-size:13px; font-weight:700; color:var(--primary-text-color);
-          margin-bottom:8px;
-        }
+        .phase-label { font-size:13px; font-weight:700; color:var(--primary-text-color); margin-bottom:8px; }
       </style>
 
       <div class="row">
@@ -87,16 +74,13 @@ class UltimatePowerCardEditor extends HTMLElement {
           <option value="3">3 fasen</option>
         </select>
       </div>
-
       <div id="phaseGroups"></div>
     `;
 
-    // Wire phase selector
     const phaseSelect = this.shadowRoot.getElementById("phases");
     phaseSelect.value = String(phases);
     phaseSelect.addEventListener("change", () => {
-      const v = parseInt(phaseSelect.value);
-      this._config = { ...this._config, phases: v };
+      this._config = { ...this._config, phases: parseInt(phaseSelect.value) };
       this._fireChanged();
       this._renderPhaseGroups();
     });
@@ -107,9 +91,7 @@ class UltimatePowerCardEditor extends HTMLElement {
 
   _renderPhaseGroups() {
     const container = this.shadowRoot.getElementById("phaseGroups");
-    const phases = this._val("phases", 3);
-    const count = phases === 1 ? 1 : 3;
-
+    const count = this._val("phases", 3) === 1 ? 1 : 3;
     container.innerHTML = "";
 
     for (let i = 1; i <= count; i++) {
@@ -117,22 +99,12 @@ class UltimatePowerCardEditor extends HTMLElement {
       group.className = "phase-group";
       group.innerHTML = `
         <div class="phase-label">Fase ${i}</div>
-        <div class="row">
-          <label>Spanning (V)</label>
-          <ha-entity-picker id="voltage_l${i}" allow-custom-entity></ha-entity-picker>
-        </div>
-        <div class="row">
-          <label>Vermogen (W/kW)</label>
-          <ha-entity-picker id="power_l${i}" allow-custom-entity></ha-entity-picker>
-        </div>
-        <div class="row">
-          <label>Stroom (A)</label>
-          <ha-entity-picker id="current_l${i}" allow-custom-entity></ha-entity-picker>
-        </div>
+        <div class="row"><label>Spanning (V)</label><ha-entity-picker id="voltage_l${i}" allow-custom-entity></ha-entity-picker></div>
+        <div class="row"><label>Vermogen (W/kW)</label><ha-entity-picker id="power_l${i}" allow-custom-entity></ha-entity-picker></div>
+        <div class="row"><label>Stroom (A)</label><ha-entity-picker id="current_l${i}" allow-custom-entity></ha-entity-picker></div>
       `;
       container.appendChild(group);
 
-      // Wire pickers
       ["voltage", "power", "current"].forEach((type) => {
         const key = `${type}_l${i}`;
         const picker = group.querySelector(`#${key}`);
@@ -156,13 +128,11 @@ class UltimatePowerCardEditor extends HTMLElement {
   }
 
   _fireChanged() {
-    this.dispatchEvent(
-      new CustomEvent("config-changed", {
-        detail: { config: this._config },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.dispatchEvent(new CustomEvent("config-changed", {
+      detail: { config: this._config },
+      bubbles: true,
+      composed: true,
+    }));
   }
 }
 customElements.define("ultimate-power-card-editor", UltimatePowerCardEditor);
@@ -206,7 +176,6 @@ class UltimatePowerCard extends HTMLElement {
     return this._config.phases === 1 ? 1 : 2;
   }
 
-  /* --- Build DOM once --- */
   _buildStructure() {
     const count = this._config.phases === 1 ? 1 : 3;
 
@@ -216,18 +185,15 @@ class UltimatePowerCard extends HTMLElement {
       rowsHTML += `
         <div class="row${border}" id="phase-${i}">
           <span class="pn">Fase ${i}</span>
-          <div class="val">
-            <ha-icon icon="mdi:sine-wave" class="vi"></ha-icon>
-            <span class="vt" id="volt-${i}">-- V</span>
-          </div>
-          <div class="val">
-            <ha-icon icon="mdi:flash" class="vi"></ha-icon>
-            <span class="vt" id="power-${i}">-- W</span>
-          </div>
-          <div class="val">
-            <ha-icon icon="mdi:current-ac" class="vi"></ha-icon>
-            <span class="vt" id="amp-${i}">-- A</span>
-          </div>
+
+          <ha-icon icon="mdi:sine-wave" class="vi"></ha-icon>
+          <span class="vt" id="volt-${i}">-- V</span>
+
+          <ha-icon icon="mdi:flash" class="vi"></ha-icon>
+          <span class="vt pw" id="power-${i}">-- W</span>
+
+          <ha-icon icon="mdi:current-ac" class="vi"></ha-icon>
+          <span class="vt" id="amp-${i}">-- A</span>
         </div>
       `;
     }
@@ -243,6 +209,7 @@ class UltimatePowerCard extends HTMLElement {
   _styles() {
     return `<style>
       :host { display:block; }
+
       .fc {
         border-radius: 28px;
         background: none;
@@ -256,80 +223,96 @@ class UltimatePowerCard extends HTMLElement {
         padding: 4px 0;
         font-family: var(--primary-font-family, sans-serif);
       }
+
+      /* ── Grid layout ──────────────────────────────────────────
+         Columns (left→right):
+           [label]  [v-icon]  [volt-val]  [p-icon]  [power-val]  [a-icon]  [amp-val]
+
+         Fixed widths keep every column pixel-perfect across all
+         rows, even when L1=800 W while L2/L3=0 W.
+      ────────────────────────────────────────────────────────── */
       .row {
-        display: flex;
+        display: grid;
+        grid-template-columns:
+          62px          /* phase label           */
+          22px          /* voltage icon          */
+          60px          /* voltage value         */
+          22px          /* power icon            */
+          76px          /* power value (up to -1200 W) */
+          22px          /* current icon          */
+          60px;         /* current value         */
         align-items: center;
         padding: 14px 20px;
-        gap: 8px;
+        gap: 0;         /* spacing handled by column widths */
+        column-gap: 4px;
       }
+
       .rb {
         border-bottom: 1px solid rgba(255,255,255,0.08);
       }
+
+      /* Phase label */
       .pn {
         font-size: 14px;
         font-weight: 700;
         color: rgba(255,255,255,0.92);
-        width: 60px;
-        flex-shrink: 0;
       }
-      .val {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex: 1;
-        min-width: 0;
-      }
+
+      /* Icons: always the same size, colour */
       .vi {
         --mdc-icon-size: 18px;
-        color: rgba(255,255,255,0.4);
+        color: rgba(255,255,255,0.38);
         display: flex;
-        flex-shrink: 0;
+        justify-content: center;
       }
+
+      /* Values: right-aligned within their fixed column */
       .vt {
         font-size: 14px;
         font-weight: 600;
         color: rgba(255,255,255,0.85);
         white-space: nowrap;
-        min-width: 62px;
         text-align: right;
         font-variant-numeric: tabular-nums;
       }
     </style>`;
   }
 
-  /* --- Update values only --- */
   _update() {
     if (!this._hass) return;
     const count = this._config.phases === 1 ? 1 : 3;
 
     for (let i = 1; i <= count; i++) {
-      // Voltage
+
+      /* Voltage */
       const voltEl = this.shadowRoot.getElementById(`volt-${i}`);
       if (voltEl) {
         const v = this._getVal(`voltage_l${i}`);
-        voltEl.textContent = v !== null ? Math.round(v) + " V" : "-- V";
+        voltEl.textContent = v !== null ? `${Math.round(v)} V` : "-- V";
       }
 
-      // Power (smart W/kW)
+      /* Power — smart W / kW formatting */
       const powerEl = this.shadowRoot.getElementById(`power-${i}`);
       if (powerEl) {
         const w = this._getVal(`power_l${i}`);
         if (w !== null) {
-          if (w >= 1 || w <= -1) {
+          const absW = Math.abs(w);
+          if (absW >= 1000) {
+            // Entity already in kW (e.g. P1 meters)
             powerEl.textContent = w.toFixed(2) + " kW";
           } else {
-            powerEl.textContent = Math.round(w * 1000) + " W";
+            powerEl.textContent = Math.round(w) + " W";
           }
         } else {
           powerEl.textContent = "-- W";
         }
       }
 
-      // Current
+      /* Current */
       const ampEl = this.shadowRoot.getElementById(`amp-${i}`);
       if (ampEl) {
         const a = this._getVal(`current_l${i}`);
-        ampEl.textContent = a !== null ? a.toFixed(2) + " A" : "-- A";
+        ampEl.textContent = a !== null ? `${a.toFixed(2)} A` : "-- A";
       }
     }
   }
@@ -351,14 +334,13 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "ultimate-power-card",
   name: "Ultimate Power Card",
-  description:
-    "Een stijlvolle energiekaart die spanning, vermogen en stroom per fase toont (1 of 3 fasen).",
+  description: "Een stijlvolle energiekaart die spanning, vermogen en stroom per fase toont (1 of 3 fasen).",
   preview: true,
   documentationURL: "https://github.com/Sven2410/ultimate-power-card",
 });
 
 console.info(
-  "%c ULTIMATE-POWER-CARD %c v1.0.0 ",
+  "%c ULTIMATE-POWER-CARD %c v1.1.0 ",
   "color:#fff;background:#FF9800;font-weight:bold;padding:2px 6px;border-radius:4px 0 0 4px;",
   "color:#FF9800;background:#f0f0f0;font-weight:bold;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
