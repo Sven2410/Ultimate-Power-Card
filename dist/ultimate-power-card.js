@@ -3,7 +3,7 @@
  * A custom Lovelace card for Home Assistant
  * Displays voltage, power, and current per phase (1 or 3 phase)
  *
- * Version: 1.1.0  –  Fixed column alignment with CSS Grid
+ * Version: 1.2.0  –  Fixed unit_of_measurement detection for power sensors
  */
 
 /* ============================================================
@@ -230,14 +230,6 @@ class UltimatePowerCard extends HTMLElement {
         font-family: var(--primary-font-family, sans-serif);
       }
 
-      /*
-       * Grid: 4 columns
-       *   [fase-label] [voltage-group] [power-group] [current-group]
-       *
-       * Each "group" is a .meas flex-row: icon glued directly to its value.
-       * Because all rows share the same grid template the columns align
-       * perfectly — even when one row has "800 W" and another "0 W".
-       */
       .row {
         display: grid;
         grid-template-columns: 62px 1fr 1fr 1fr;
@@ -250,32 +242,24 @@ class UltimatePowerCard extends HTMLElement {
         border-bottom: 1px solid rgba(255,255,255,0.08);
       }
 
-      /* Phase label */
       .pn {
         font-size: 14px;
         font-weight: 700;
         color: rgba(255,255,255,0.92);
       }
 
-      /*
-       * Each measurement group: icon + value as one tight unit.
-       * The group sits in a 1fr column so all three groups get
-       * equal space — guaranteed alignment across rows.
-       */
       .meas {
         display: flex;
         align-items: center;
         gap: 5px;
       }
 
-      /* Icon */
       .vi {
         --mdc-icon-size: 18px;
         color: rgba(255,255,255,0.38);
         flex-shrink: 0;
       }
 
-      /* Value text */
       .vt {
         font-size: 14px;
         font-weight: 600;
@@ -299,17 +283,29 @@ class UltimatePowerCard extends HTMLElement {
         voltEl.textContent = v !== null ? `${Math.round(v)} V` : "-- V";
       }
 
-      /* Power — smart W / kW formatting */
+      /* Power — detecteer eenheid via unit_of_measurement */
       const powerEl = this.shadowRoot.getElementById(`power-${i}`);
       if (powerEl) {
         const w = this._getVal(`power_l${i}`);
         if (w !== null) {
-          const absW = Math.abs(w);
-          if (absW >= 1000) {
-            // Entity already in kW (e.g. P1 meters)
-            powerEl.textContent = w.toFixed(2) + " kW";
+          const entityId = this._config[`power_l${i}`];
+          const unit = (this._hass.states[entityId]?.attributes?.unit_of_measurement ?? "").toLowerCase();
+
+          if (unit === "kw") {
+            // Sensor levert kW — omrekenen naar W voor weergave
+            const watts = w * 1000;
+            if (Math.abs(watts) >= 1000) {
+              powerEl.textContent = w.toFixed(3) + " kW";
+            } else {
+              powerEl.textContent = Math.round(watts) + " W";
+            }
           } else {
-            powerEl.textContent = Math.round(w) + " W";
+            // Sensor levert W
+            if (Math.abs(w) >= 1000) {
+              powerEl.textContent = (w / 1000).toFixed(2) + " kW";
+            } else {
+              powerEl.textContent = Math.round(w) + " W";
+            }
           }
         } else {
           powerEl.textContent = "-- W";
