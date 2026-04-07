@@ -3,7 +3,7 @@
  * A custom Lovelace card for Home Assistant
  * Displays voltage, power, and current per phase (1 or 3 phase)
  *
- * Version: 1.2.0  –  Fixed unit_of_measurement detection for power sensors
+ * Version: 1.4.0  –  Power <1kW in W, >=1kW in kW met komma
  */
 
 /* ============================================================
@@ -193,7 +193,7 @@ class UltimatePowerCard extends HTMLElement {
 
           <div class="meas">
             <ha-icon icon="mdi:flash" class="vi"></ha-icon>
-            <span class="vt" id="power-${i}">-- W</span>
+            <span class="vt" id="power-${i}">--</span>
           </div>
 
           <div class="meas">
@@ -283,32 +283,26 @@ class UltimatePowerCard extends HTMLElement {
         voltEl.textContent = v !== null ? `${Math.round(v)} V` : "-- V";
       }
 
-      /* Power — detecteer eenheid via unit_of_measurement */
+      /* Power — sensor in kW, <1kW tonen als W, >=1kW als kW met komma */
       const powerEl = this.shadowRoot.getElementById(`power-${i}`);
       if (powerEl) {
-        const w = this._getVal(`power_l${i}`);
-        if (w !== null) {
-          const entityId = this._config[`power_l${i}`];
-          const unit = (this._hass.states[entityId]?.attributes?.unit_of_measurement ?? "").toLowerCase();
-
-          if (unit === "kw") {
-            // Sensor levert kW — omrekenen naar W voor weergave
-            const watts = w * 1000;
-            if (Math.abs(watts) >= 1000) {
-              powerEl.textContent = w.toFixed(3) + " kW";
+        const entityId = this._config[`power_l${i}`];
+        const state = this._hass.states[entityId];
+        if (state) {
+          const w = parseFloat(state.state);
+          if (!isNaN(w)) {
+            if (Math.abs(w) < 1) {
+              // Onder 1 kW → toon in W afgerond
+              powerEl.textContent = `${Math.round(w * 1000)} W`;
             } else {
-              powerEl.textContent = Math.round(watts) + " W";
+              // 1 kW of meer → toon in kW met komma
+              powerEl.textContent = `${w.toFixed(2).replace('.', ',')} kW`;
             }
           } else {
-            // Sensor levert W
-            if (Math.abs(w) >= 1000) {
-              powerEl.textContent = (w / 1000).toFixed(2) + " kW";
-            } else {
-              powerEl.textContent = Math.round(w) + " W";
-            }
+            powerEl.textContent = "--";
           }
         } else {
-          powerEl.textContent = "-- W";
+          powerEl.textContent = "--";
         }
       }
 
@@ -344,7 +338,7 @@ window.customCards.push({
 });
 
 console.info(
-  "%c ULTIMATE-POWER-CARD %c v1.2.0 ",
+  "%c ULTIMATE-POWER-CARD %c v1.4.0 ",
   "color:#fff;background:#FF9800;font-weight:bold;padding:2px 6px;border-radius:4px 0 0 4px;",
   "color:#FF9800;background:#f0f0f0;font-weight:bold;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
