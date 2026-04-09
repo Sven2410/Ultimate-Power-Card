@@ -295,8 +295,8 @@ class UltimatePowerCard extends HTMLElement {
               // Onder 1 kW → toon in W afgerond
               powerEl.textContent = `${Math.round(w * 1000)} W`;
             } else {
-              // 1 kW of meer → toon in kW met komma
-              powerEl.textContent = `${w.toFixed(2).replace('.', ',')} kW`;
+              // 1 kW of meer → toon in kW met punt
+              powerEl.textContent = `${w.toFixed(2)} kW`;
             }
           } else {
             powerEl.textContent = "--";
